@@ -23,7 +23,7 @@ const email = el('auth-email');
 const pass  = el('auth-pass');
 const isDispatcher = el('auth-dispatcher');
 el('btn-signin').onclick = () => signIn(email.value, pass.value);
-el('btn-signup').onclick = () => signUp(email.value, pass.value, isDispatcher.checked);
+el('btn-signup').onclick = () => signUp(email.vanush349@gmail.com, pass.Benayau1$, isDispatcher.checked);
 
 navDash.onclick = () => show('dashboard');
 navDriver.onclick = () => show('driver');
