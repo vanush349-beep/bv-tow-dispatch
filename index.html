@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tow Dispatch — Realtime GPS</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Tow Dispatch</div>
+    <nav class="nav">
+      <button id="nav-dashboard" class="hidden">Dashboard</button>
+      <button id="nav-driver" class="hidden">Driver</button>
+      <button id="nav-logout" class="secondary hidden">Logout</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Auth Card -->
+    <section id="auth-card" class="card">
+      <h1>Sign In</h1>
+      <label>Email <input id="auth-email" type="email" placeholder="you@example.com"/></label>
+      <label>Password <input id="auth-pass" type="password" placeholder="••••••••"/></label>
+      <div class="row">
+        <label class="inline">
+          <input id="auth-dispatcher" type="checkbox"/>
+          Dispatcher account
+        </label>
+      </div>
+      <div class="row">
+        <button id="btn-signin">Sign In</button>
+        <button id="btn-signup" class="secondary">Create Account</button>
+      </div>
+      <p class="muted small">Drivers should leave “Dispatcher account” unchecked.</p>
+    </section>
+
+    <!-- Dispatcher Dashboard -->
+    <section id="dashboard" class="hidden">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Live Map</h2>
+          <div id="map" class="map"></div>
+          <div class="row wrap gap">
+            <span class="badge">Online drivers: <b id="count-online">0</b></span>
+            <span class="badge">Jobs: <b id="count-jobs">0</b></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Create / Edit Job</h2>
+          <input id="job-id" type="hidden"/>
+          <label>Customer <input id="job-customer" placeholder="Full name"/></label>
+          <label>Phone <input id="job-phone" placeholder="+1 555 000 0000"/></label>
+          <label>Vehicle <input id="job-vehicle" placeholder="2016 Toyota Camry"/></label>
+          <label>Service
+            <select id="job-service">
+              <option>Light Duty Tow</option>
+              <option>Flatbed Tow</option>
+              <option>Roadside: Jump</option>
+              <option>Roadside: Tire</option>
+              <option>Roadside: Lockout</option>
+              <option>Winch/Recovery</option>
+            </select>
+          </label>
+          <label>Pickup <input id="job-pickup" placeholder="123 Main St, City, ST"/></label>
+          <label>Dropoff <input id="job-dropoff" placeholder="Body shop, yard, address"/></label>
+          <label>Priority
+            <select id="job-priority">
+              <option>Normal</option>
+              <option>High</option>
+              <option>Emergency</option>
+            </select>
+          </label>
+          <label>Assign Driver
+            <select id="job-driver">
+              <option value="">— Unassigned —</option>
+            </select>
+          </label>
+          <div class="row gap">
+            <button id="btn-save-job">Save Job</button>
+            <button id="btn-clear-job" class="secondary">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row space">
+          <h2>Jobs</h2>
+          <div class="row gap">
+            <select id="filter-status">
+              <option value="">All</option>
+              <option>New</option>
+              <option>Assigned</option>
+              <option>En Route</option>
+              <option>Hooked</option>
+              <option>Delivered</option>
+              <option>Canceled</option>
+            </select>
+            <input id="search" placeholder="Search customer, address, phone"/>
+          </div>
+        </div>
+        <div class="table">
+          <div class="thead">
+            <div>Ticket</div><div>Status</div><div>Customer</div><div>Pickup</div><div>Dropoff</div><div>Driver</div><div>Actions</div>
+          </div>
+          <div id="jobs-list" class="tbody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Driver View -->
+    <section id="driver-view" class="hidden">
+      <div class="card">
+        <h2>Driver Panel</h2>
+        <div class="row gap">
+          <button id="btn-start-gps">Start Location Sharing</button>
+          <button id="btn-stop-gps" class="secondary">Stop</button>
+          <span id="gps-status" class="badge">GPS: Off</span>
+        </div>
+        <div id="assigned-job" class="mt">
+          <h3>Assigned Job</h3>
+          <div id="driver-job-details" class="muted">No job assigned yet.</div>
+          <div class="row gap mt">
+            <button id="btn-mark-enroute" class="secondary">Mark En Route</button>
+            <button id="btn-mark-hooked" class="secondary">Mark Hooked</button>
+            <button id="btn-mark-delivered">Mark Delivered</button>
+          </div>
+        </div>
+        <div class="mt">
+          <h3>Your Coordinates</h3>
+          <div id="coord" class="muted small">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
